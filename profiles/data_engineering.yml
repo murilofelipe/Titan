@@ -1,0 +1,21 @@
+id: "data_engineering"
+name: "Engenharia de Dados (Freelance)"
+description: "Pipeline focado em entrega rápida de dados, ETL, modelagem dbt e infraestrutura básica."
+steps:
+  - name: "Levantamento e Entendimento dos Dados"
+    description: "Analise a estrutura esperada do cliente e crie scripts HTTP genéricos ou scraper."
+    agent: "Claude Code"
+    context_files: ["shared_context/rules/python_clean_code.md"]
+    expected_output: "Scripts de extração rodando e salvando CSV/JSON brutos."
+  
+  - name: "Inferência e DDL"
+    description: "Leia o JSON/CSV extraído e gere um schema DDL apropriado para a tabela."
+    agent: "Antigravity"
+    context_files: []
+    expected_output: "Arquivos .sql com CREATE TABLE."
+
+  - name: "Modelagem (dbt)"
+    description: "Crie a estrutura dbt com os modelos sql e schema.yml."
+    agent: "Claude Code"
+    context_files: ["shared_context/skills/dbt_modeling.md"]
+    expected_output: "Projeto dbt configurado e tabelas finais rodando."
