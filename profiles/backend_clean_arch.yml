@@ -1,0 +1,21 @@
+id: "backend_clean_arch"
+name: "Backend (Clean Architecture)"
+description: "Esteira de desenvolvimento backend padrão focada em DDD e Clean Architecture."
+steps:
+  - name: "Pesquisa e Arquitetura"
+    description: "Faça o levantamento de tecnologias necessárias e desenhe os domínios (DDD)."
+    agent: "Claude Code"
+    context_files: ["shared_context/rules/clean_architecture.md"]
+    expected_output: "Documento arquitetural markdown com os bounded contexts definidos."
+  
+  - name: "Implementação Base"
+    description: "Crie a estrutura de pastas do backend e implemente o primeiro domínio."
+    agent: "Claude Code"
+    context_files: ["shared_context/rules/clean_architecture.md"]
+    expected_output: "Código inicial rodando com injeção de dependências."
+  
+  - name: "Revisão de Código e Desacoplamento"
+    description: "Revise o código para garantir ausência de dependências circulares e acoplamento forte."
+    agent: "Antigravity"
+    context_files: ["shared_context/skills/code_review.md"]
+    expected_output: "Relatório de code review e correções pontuais aplicadas."
