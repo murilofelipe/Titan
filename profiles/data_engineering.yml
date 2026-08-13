@@ -5,17 +5,24 @@ steps:
   - name: "Levantamento e Entendimento dos Dados"
     description: "Analise a estrutura esperada do cliente e crie scripts HTTP genéricos ou scraper."
     agent: "Claude Code"
-    context_files: ["shared_context/rules/python_clean_code.md"]
+    context_files:
+      - "shared_context/rules/python_clean_code.md"
     expected_output: "Scripts de extração rodando e salvando CSV/JSON brutos."
-  
+    approval_required: false
+
   - name: "Inferência e DDL"
     description: "Leia o JSON/CSV extraído e gere um schema DDL apropriado para a tabela."
     agent: "Antigravity"
-    context_files: []
+    context_files:
+      - "shared_context/rules/python_clean_code.md"
     expected_output: "Arquivos .sql com CREATE TABLE."
+    approval_required: false
 
   - name: "Modelagem (dbt)"
     description: "Crie a estrutura dbt com os modelos sql e schema.yml."
     agent: "Claude Code"
-    context_files: ["shared_context/skills/dbt_modeling.md"]
+    context_files:
+      - "shared_context/skills/dbt_modeling.md"
+      - "shared_context/skills/code_review.md"
     expected_output: "Projeto dbt configurado e tabelas finais rodando."
+    approval_required: true
