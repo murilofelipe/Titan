@@ -2,14 +2,21 @@ from typing import Optional
 from core.classifier import classify_work
 from core.parser import load_profile, PipelineProfile
 from core.state import StateManager, PipelineState, StepStatus
+from core.context_loader import load_step_context, format_context_for_prompt
 
 
 class Orchestrator:
     """Orchestrator engine integrating classifier, parser, state manager, and pipeline execution."""
 
-    def __init__(self, profiles_dir: str = "profiles", state_manager: Optional[StateManager] = None):
+    def __init__(
+        self,
+        profiles_dir: str = "profiles",
+        state_manager: Optional[StateManager] = None,
+        base_dir: str = ".",
+    ):
         self.profiles_dir = profiles_dir
         self.state_manager = state_manager if state_manager is not None else StateManager()
+        self.base_dir = base_dir
 
     def run_pipeline(
         self,
@@ -53,13 +60,29 @@ class Orchestrator:
 
         for step_index in range(start_index, len(profile.steps)):
             step = profile.steps[step_index]
-            self.state_manager.update_step_status(profile_id, step_index, StepStatus.IN_PROGRESS)
+            step_context = load_step_context(
+                step.context_files, base_dir=self.base_dir, step_name=step.name
+            )
+
+            artifacts_to_save = {}
+            if not step_context.is_empty():
+                artifacts_to_save["loaded_context"] = step_context.model_dump()
+
+            self.state_manager.update_step_status(
+                profile_id,
+                step_index,
+                StepStatus.IN_PROGRESS,
+                artifacts=artifacts_to_save if artifacts_to_save else None,
+            )
 
             print(f"[{step_index + 1}/{len(profile.steps)}] Etapa: {step.name}")
             print(f"🤖 Agente Recomendado: {step.agent}")
             print(f"📝 Descrição da Tarefa: {step.description}")
             if step.context_files:
-                print(f"📂 Arquivos de Contexto (Adicione ao prompt): {', '.join(step.context_files)}")
+                print(f"📂 Arquivos de Contexto: {', '.join(step.context_files)}")
+                context_text = format_context_for_prompt(step_context)
+                if context_text:
+                    print(context_text)
             print(f"🎯 Saída Esperada: {step.expected_output}")
             print("-" * 50)
 
@@ -70,4 +93,5 @@ class Orchestrator:
 
         print("✅ Pipeline concluído com sucesso!")
         return self.state_manager.load_state(profile_id)
+
 
