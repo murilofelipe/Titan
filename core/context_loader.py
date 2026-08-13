@@ -31,7 +31,7 @@ def load_context_file(file_path: str, base_dir: str = ".") -> ContextItem:
     Returns:
         ContextItem containing the file content or error information.
     """
-    resolved_path = file_path if os.isabs(file_path) else os.path.join(base_dir, file_path)
+    resolved_path = file_path if os.path.isabs(file_path) else os.path.join(base_dir, file_path)
 
     if not os.path.exists(resolved_path):
         return ContextItem(file_path=file_path, exists=False, error=f"File not found: {file_path}")
