@@ -9,11 +9,11 @@ desenvolvedor continua sendo o decisor em cada gate.
 Formato conforme `Github/.agents/rules/backlog_format.md` (Épico → Story com
 Fibonacci + justificativa + subtarefas).
 
-**Placar:** 4 épicos · 20 stories · 4 concluídas (✅) · 3 parciais (🟡) · 13 pendentes (⬜) · peso total 101.
+**Placar:** 4 épicos · 20 stories · 6 concluídas (✅) · 2 parciais (🟡) · 12 pendentes (⬜) · peso total 101.
 
 | Épico | Stories | Concluídas | Peso |
 |---|---|---|---|
-| 1 · Orquestrador (Titan/HAL) | 4 | 2 ✅ | 24 |
+| 1 · Orquestrador (Titan/HAL) | 4 | 4 ✅ | 24 |
 | 2 · Perfis de Engenharia | 7 | 1 ✅ / 2 🟡 | 31 |
 | 3 · Adapters de Agentes | 6 | 0 | 21 |
 | 4 · Gates de Qualidade & HITL | 3 | 0 (1 🟡) | 18 |
@@ -30,21 +30,23 @@ Legenda: ✅ feito · 🟡 parcial · ⬜ pendente.
 O núcleo: classifica o trabalho, lê a esteira do `.yml`, executa passo a passo e
 mantém o estado. Issues originais #1–#3 (fechadas).
 
-### 🎫 Story 1.1: Classificador de trabalho de IA ✅→🟡
+### 🎫 Story 1.1: Classificador de trabalho de IA ✅
 - **Descrição:** Identifica se o pedido inicial requer um pipeline de Engenharia
-  de Dados, Backend, DevOps etc. e carrega o `.yml` correspondente. Hoje:
-  `core/classifier.py` com keyword scoring (data eng vs backend). Evolução:
-  suportar todos os perfis do Épico 2 e desempate melhor (pesos por termo,
-  fallback interativo).
+  de Dados, Backend, DevOps etc. e carrega o `.yml` correspondente.
+  `core/classifier.py`: `PROFILE_KEYWORDS` cobre os 6 perfis do Épico 2 (as
+  keywords de mobile/embedded/ai_ml/game ficam dormentes até os `.yml` das
+  stories 2.4–2.7 existirem — gate de disponibilidade), score normalizado com
+  `CONFIDENCE_THRESHOLD` de margem e fallback interativo (`click.prompt`) quando
+  a confiança é baixa.
 - **Complexidade:** Média | **Peso:** 5
 - **Justificativa do Peso:** A base (scoring por keyword) já existe; o trabalho
   restante é ampliar o dicionário de termos por perfil e tratar ambiguidade sem
   virar um classificador ML. Risco baixo, escopo médio.
 - **Tarefas:**
-  - [ ] Dicionário de keywords para os 7 perfis
-  - [ ] Score normalizado + limiar de confiança
-  - [ ] Fallback: pergunta o perfil quando o score é baixo
-  - [ ] Testes cobrindo cada perfil
+  - [x] Dicionário de keywords por perfil (`PROFILE_KEYWORDS`)
+  - [x] Score normalizado + limiar de confiança (margem sobre o 2º colocado)
+  - [x] Fallback: pergunta o perfil (`click.prompt`) quando a confiança é baixa
+  - [x] Testes (perfil dormente cai no default, fallback interativo)
 
 ### 🎫 Story 1.2: Parser e Engine do Pipeline ✅
 - **Descrição:** Lê os `.yml` de perfil (Pydantic), descobre qual agente executar
@@ -71,16 +73,21 @@ mantém o estado. Issues originais #1–#3 (fechadas).
   - [x] `run --resume` / `run --reset`
   - [x] `titan status`
 
-### 🎫 Story 1.4: Telemetria de execução ⬜
-- **Descrição:** Registrar por etapa: agente recomendado, duração (start/end),
-  se foi aprovada, quantos ciclos de review. `titan status` mostra o resumo.
+### 🎫 Story 1.4: Telemetria de execução ✅
+- **Descrição:** `StepState` grava `agent`, `duration_seconds` (de
+  started_at/completed_at) e `advanced_by` (`auto`/`human`). `titan status`
+  mostra agente/duração/liberação por etapa; `titan report <perfil>` exporta o
+  resumo em Markdown (`.reports/telemetria-<perfil>.md` + stdout) via
+  `core/telemetry.py`.
 - **Complexidade:** Baixa | **Peso:** 3
 - **Justificativa do Peso:** Extensão do estado já existente com timestamps e um
   agregador de leitura. Sem lógica nova de orquestração.
 - **Tarefas:**
-  - [ ] Campos de tempo/agente/aprovação no modelo de etapa
-  - [ ] Agregador para `titan status`
-  - [ ] Export do resumo em Markdown
+  - [x] Campos de tempo/agente/liberação no modelo de etapa
+  - [x] Agregador para `titan status`
+  - [x] Export do resumo em Markdown (`titan report`)
+  - Aprovação real (quem/quando) e contagem de ciclos de review ficam nas
+    stories 4.1 (#11) e 4.2 (#12) — aqui só o fato `auto`/`human`.
 
 ---
 

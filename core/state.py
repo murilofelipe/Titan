@@ -18,10 +18,23 @@ class StepState(BaseModel):
     step_index: int
     step_name: str
     status: StepStatus = StepStatus.PENDING
+    agent: Optional[str] = None
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
+    advanced_by: Optional[str] = None  # "auto" | "human" — quem liberou a etapa
     artifacts: Dict[str, Any] = Field(default_factory=dict)
     notes: Optional[str] = None
+
+    @property
+    def duration_seconds(self) -> Optional[float]:
+        if not self.started_at or not self.completed_at:
+            return None
+        try:
+            start = datetime.fromisoformat(self.started_at)
+            end = datetime.fromisoformat(self.completed_at)
+        except ValueError:
+            return None
+        return (end - start).total_seconds()
 
 
 class PipelineState(BaseModel):
@@ -55,6 +68,7 @@ class StateManager:
                 StepState(
                     step_index=i,
                     step_name=name,
+                    agent=getattr(step, "agent", None),
                     status=StepStatus.PENDING
                 )
             )
@@ -92,7 +106,8 @@ class StateManager:
         step_index: int,
         status: StepStatus,
         notes: Optional[str] = None,
-        artifacts: Optional[Dict[str, Any]] = None
+        artifacts: Optional[Dict[str, Any]] = None,
+        advanced_by: Optional[str] = None
     ) -> PipelineState:
         state = self.load_state(profile_id)
         if state is None:
@@ -117,6 +132,9 @@ class StateManager:
 
         if notes is not None:
             step.notes = notes
+
+        if advanced_by is not None:
+            step.advanced_by = advanced_by
 
         if artifacts:
             step.artifacts.update(artifacts)
