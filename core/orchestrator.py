@@ -36,7 +36,11 @@ class Orchestrator:
         Returns:
             PipelineState: Final execution state.
         """
-        profile_id = classify_work(profile_id_or_prompt, profiles_dir=self.profiles_dir)
+        profile_id = classify_work(
+            profile_id_or_prompt,
+            profiles_dir=self.profiles_dir,
+            interactive=not auto_approve,
+        )
         profile: PipelineProfile = load_profile(profile_id, profiles_dir=self.profiles_dir)
 
         if reset:
@@ -89,7 +93,12 @@ class Orchestrator:
             if not auto_approve:
                 input("Pressione ENTER quando tiver concluído esta etapa com o agente sugerido... ")
 
-            self.state_manager.update_step_status(profile_id, step_index, StepStatus.COMPLETED)
+            self.state_manager.update_step_status(
+                profile_id,
+                step_index,
+                StepStatus.COMPLETED,
+                advanced_by="auto" if auto_approve else "human",
+            )
 
         print("✅ Pipeline concluído com sucesso!")
         return self.state_manager.load_state(profile_id)
