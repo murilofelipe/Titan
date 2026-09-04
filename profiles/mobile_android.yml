@@ -1,0 +1,43 @@
+id: "mobile_android"
+name: "Mobile / Android (Compose)"
+description: "Esteira de app Android nativo: MVVM/Clean, UI em Jetpack Compose e dados offline-first."
+steps:
+  - name: "Pesquisa Técnica"
+    description: "Levante bibliotecas, APIs e restrições da plataforma (versões mínimas de SDK, permissões)."
+    agent: "Perplexity"
+    context_files: []
+    expected_output: "docs/research.md com decisões de libs (DI, rede, persistência) e alvo de API."
+    approval_required: false
+
+  - name: "Arquitetura (MVVM / Clean)"
+    description: "Defina as camadas, o contrato de UiState por tela e a fronteira domain/data."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/rules/clean_architecture.md"
+      - "shared_context/skills/compose_mvvm.md"
+    expected_output: "docs/architecture.md com módulos, camadas e fluxo de dados offline-first."
+    approval_required: true
+
+  - name: "UI em Compose"
+    description: "Implemente as telas como Composables com state hoisting e previews."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/compose_mvvm.md"
+    expected_output: "Telas navegáveis consumindo StateFlow do ViewModel."
+    approval_required: false
+
+  - name: "Testes"
+    description: "Testes de ViewModel (Turbine), Repository (Room in-memory) e Compose nos fluxos críticos."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/compose_mvvm.md"
+    expected_output: "Suíte verde cobrindo ViewModel, Repository e os fluxos de tela principais."
+    approval_required: false
+
+  - name: "Review"
+    description: "Revise acoplamento entre camadas, vazamento de Context no ViewModel e a estratégia de sync."
+    agent: "Antigravity"
+    context_files:
+      - "shared_context/skills/code_review.md"
+    expected_output: "Relatório de review com veredito e correções aplicadas."
+    approval_required: true

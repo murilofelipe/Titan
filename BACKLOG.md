@@ -9,12 +9,12 @@ desenvolvedor continua sendo o decisor em cada gate.
 Formato conforme `Github/.agents/rules/backlog_format.md` (Épico → Story com
 Fibonacci + justificativa + subtarefas).
 
-**Placar:** 4 épicos · 20 stories · 6 concluídas (✅) · 2 parciais (🟡) · 12 pendentes (⬜) · peso total 101.
+**Placar:** 4 épicos · 20 stories · 10 concluídas (✅) · 2 parciais (🟡) · 8 pendentes (⬜) · peso total 101.
 
 | Épico | Stories | Concluídas | Peso |
 |---|---|---|---|
 | 1 · Orquestrador (Titan/HAL) | 4 | 4 ✅ | 24 |
-| 2 · Perfis de Engenharia | 7 | 1 ✅ / 2 🟡 | 31 |
+| 2 · Perfis de Engenharia | 7 | 5 ✅ / 2 🟡 | 31 |
 | 3 · Adapters de Agentes | 6 | 0 | 21 |
 | 4 · Gates de Qualidade & HITL | 3 | 0 (1 🟡) | 18 |
 
@@ -33,9 +33,9 @@ mantém o estado. Issues originais #1–#3 (fechadas).
 ### 🎫 Story 1.1: Classificador de trabalho de IA ✅
 - **Descrição:** Identifica se o pedido inicial requer um pipeline de Engenharia
   de Dados, Backend, DevOps etc. e carrega o `.yml` correspondente.
-  `core/classifier.py`: `PROFILE_KEYWORDS` cobre os 6 perfis do Épico 2 (as
-  keywords de mobile/embedded/ai_ml/game ficam dormentes até os `.yml` das
-  stories 2.4–2.7 existirem — gate de disponibilidade), score normalizado com
+  `core/classifier.py`: `PROFILE_KEYWORDS` cobre os 6 perfis; um gate de
+  disponibilidade garante que nunca retorna um perfil sem `.yml` (keywords de
+  perfis futuros ficam inertes até o arquivo existir). Score normalizado com
   `CONFIDENCE_THRESHOLD` de margem e fallback interativo (`click.prompt`) quando
   a confiança é baixa.
 - **Complexidade:** Média | **Peso:** 5
@@ -135,7 +135,7 @@ Cada perfil: pipeline + agentes + `context_files` + critérios de aceite.
   - [x] Ler `context_files` por step
   - [x] Formatar bloco de contexto no output da etapa
 
-### 🎫 Story 2.4: Perfil "Mobile / Android (Compose)" ⬜
+### 🎫 Story 2.4: Perfil "Mobile / Android (Compose)" ✅
 - **Descrição:** Esteira: Pesquisa → Arquitetura (MVVM/Clean) → UI Compose →
   Testes → Review. Agentes: Perplexity, Claude Code, Junie (quando JetBrains),
   Antigravity.
@@ -143,47 +143,49 @@ Cada perfil: pipeline + agentes + `context_files` + critérios de aceite.
 - **Justificativa do Peso:** Perfil novo do zero + skills de Compose/MVVM e
   offline-first em `shared_context/`.
 - **Tarefas:**
-  - [ ] `profiles/mobile_android.yml`
-  - [ ] Skills Compose + MVVM + offline-first
-  - [ ] Keywords no classificador (Story 1.1)
+  - [x] `profiles/mobile_android.yml` (5 steps, gates em Arquitetura e Review)
+  - [x] Skill `compose_mvvm.md` (Compose + MVVM + offline-first num arquivo só)
+  - [x] Keywords já no classificador (dormentes até este `.yml`)
 
-### 🎫 Story 2.5: Perfil "Embarcados" ⬜
+### 🎫 Story 2.5: Perfil "Embarcados" ✅
 - **Descrição:** Esteira: Pesquisa de datasheet → Driver → Firmware → Análise de
   consumo → Testes → Flash.
 - **Complexidade:** Média | **Peso:** 5
 - **Justificativa do Peso:** Perfil novo; a fase de datasheet e a de consumo
   precisam de skills próprias e de um gate humano forte (hardware).
 - **Tarefas:**
-  - [ ] `profiles/embedded.yml`
-  - [ ] Skill de leitura de datasheet
-  - [ ] Gate humano obrigatório antes do flash
+  - [x] `profiles/embedded.yml` (6 steps)
+  - [x] Skill `datasheet_reading.md`
+  - [x] Gate humano (`approval_required`) na Pesquisa de Datasheet e no Flash
 
-### 🎫 Story 2.6: Perfil "IA / ML" ⬜
+### 🎫 Story 2.6: Perfil "IA / ML" ✅
 - **Descrição:** Esteira: Pesquisa → Dataset → Treinamento → Avaliação → Deploy →
   Monitoramento.
 - **Complexidade:** Média | **Peso:** 5
 - **Justificativa do Peso:** Perfil novo; fases de avaliação e monitoramento
   exigem critérios de aceite quantitativos nas skills.
 - **Tarefas:**
-  - [ ] `profiles/ai_ml.yml`
-  - [ ] Skills de avaliação (métricas) e model monitoring
-  - [ ] Keywords no classificador
+  - [x] `profiles/ai_ml.yml` (6 steps, gate na Avaliação)
+  - [x] Skill `ml_evaluation.md` (métricas + monitoring/drift num arquivo só)
+  - [x] Keywords já no classificador
 
-### 🎫 Story 2.7: Perfil "Game" ⬜
+### 🎫 Story 2.7: Perfil "Game" ✅
 - **Descrição:** Esteira: Pesquisa → Arquitetura → Implementação → Review.
 - **Complexidade:** Baixa | **Peso:** 3
 - **Justificativa do Peso:** Perfil mais enxuto; reaproveita boa parte das skills
   de backend/arquitetura.
 - **Tarefas:**
-  - [ ] `profiles/game.yml`
-  - [ ] Keywords no classificador
+  - [x] `profiles/game.yml` (4 steps, reusa clean_architecture + code_review)
+  - [x] Keywords já no classificador
 
 ---
 
 ## 🗂️ Épico 3 — Adapters de Agentes
 
 Formalizar como cada papel de agente é referenciado nos steps. Hoje `agent:` é
-uma string livre no `.yml`; só "Claude Code" e "Antigravity" são usados.
+uma string livre no `.yml`; os 6 perfis já usam os nomes canônicos previstos
+para o registry ("Claude Code", "Antigravity", "Perplexity", "Codex CLI"), mas
+sem validação.
 
 ### 🎫 Story 3.1: Registry de agentes + mapa dos 5 papéis ⬜
 - **Descrição:** Um catálogo (`agents.yml` ou enum) com os papéis: Perplexity =
@@ -197,7 +199,7 @@ uma string livre no `.yml`; só "Claude Code" e "Antigravity" são usados.
   - [ ] `shared_context/agents.yml` com papel, ponto forte, quando usar
   - [ ] Validação de `agent:` no parser
   - [ ] Mensagem de etapa por agente no orchestrator
-  - [ ] Migrar os 2 perfis existentes para os nomes do registry
+  - [ ] Validar os 6 perfis existentes contra o registry (nomes já canônicos)
 
 ### 🎫 Story 3.2: Adapter Pesquisador (Perplexity) ⬜
 - **Descrição:** Instruções e prompts para as etapas de descoberta, levantamento

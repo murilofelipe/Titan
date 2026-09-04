@@ -1,0 +1,49 @@
+id: "embedded"
+name: "Embarcados (Firmware)"
+description: "Esteira de firmware: datasheet → driver → firmware → consumo → testes → flash, com gate humano forte antes de gravar o hardware."
+steps:
+  - name: "Pesquisa de Datasheet"
+    description: "Extraia alimentação, interface, timing e mapa de registradores do componente."
+    agent: "Perplexity"
+    context_files:
+      - "shared_context/skills/datasheet_reading.md"
+    expected_output: "docs/hardware/<componente>.md com pinagem, registradores e sequência de init citando o datasheet."
+    approval_required: true
+
+  - name: "Driver"
+    description: "Implemente o driver do periférico (init, leitura, escrita) conforme a sequência do datasheet."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/datasheet_reading.md"
+      - "shared_context/rules/python_clean_code.md"
+    expected_output: "Driver compilando, com os delays obrigatórios e tratamento de erro de barramento."
+    approval_required: false
+
+  - name: "Firmware"
+    description: "Integre o driver na aplicação: máquina de estados, loop principal e modos de energia."
+    agent: "Claude Code"
+    context_files: []
+    expected_output: "Firmware compilando com a lógica de aplicação e transições de modo de energia."
+    approval_required: false
+
+  - name: "Análise de Consumo"
+    description: "Estime a corrente média por modo e a autonomia; ajuste sleep/deep-sleep."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/datasheet_reading.md"
+    expected_output: "docs/hardware/consumo.md com corrente por modo, duty cycle e autonomia estimada."
+    approval_required: false
+
+  - name: "Testes"
+    description: "Testes de unidade do driver com HAL mockada e testes da máquina de estados."
+    agent: "Claude Code"
+    context_files: []
+    expected_output: "Suíte verde do driver e da lógica de aplicação (sem hardware)."
+    approval_required: false
+
+  - name: "Flash"
+    description: "Gravação no hardware real e validação bancada. Requer OK humano explícito — hardware não tem undo."
+    agent: "Codex CLI"
+    context_files: []
+    expected_output: "Firmware rodando na placa; checklist de bancada preenchido."
+    approval_required: true

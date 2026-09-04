@@ -1,0 +1,34 @@
+id: "game"
+name: "Game"
+description: "Esteira enxuta de jogo: pesquisa → arquitetura → implementação → review. Reaproveita as skills de arquitetura e review."
+steps:
+  - name: "Pesquisa"
+    description: "Defina engine, escopo do protótipo e referências de mecânica."
+    agent: "Perplexity"
+    context_files: []
+    expected_output: "docs/research.md com engine escolhida, loop central e escopo do vertical slice."
+    approval_required: false
+
+  - name: "Arquitetura"
+    description: "Modele entidades, sistemas e o game loop; separe regra de jogo de renderização/input."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/rules/clean_architecture.md"
+    expected_output: "docs/architecture.md com entidades, sistemas e a fronteira lógica/apresentação."
+    approval_required: false
+
+  - name: "Implementação"
+    description: "Implemente o vertical slice jogável: loop, sistemas centrais e uma fase."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/rules/python_clean_code.md"
+    expected_output: "Build jogável do vertical slice."
+    approval_required: false
+
+  - name: "Review"
+    description: "Revise acoplamento entre sistemas, custo por frame e pontos de gargalo do loop."
+    agent: "Antigravity"
+    context_files:
+      - "shared_context/skills/code_review.md"
+    expected_output: "Relatório de review com veredito e ajustes aplicados."
+    approval_required: true

@@ -122,6 +122,19 @@ steps:
     assert profile_def.steps[0].approval_required is False
 
 
+def test_all_shipped_profiles_parse_and_reference_existing_context():
+    """Todo profiles/*.yml valida no schema e só aponta para context_files que existem."""
+    import os
+    from core.classifier import get_available_profiles
+
+    for pid in get_available_profiles("profiles"):
+        profile = load_profile(pid, profiles_dir="profiles")
+        assert profile.steps, f"{pid} sem steps"
+        for step in profile.steps:
+            for cf in step.context_files:
+                assert os.path.isfile(cf), f"{pid}: context_file inexistente {cf}"
+
+
 def test_load_profile_yaml_extension(tmp_path):
     """Verify load_profile handles both .yml and .yaml files."""
     yaml_profile = tmp_path / "custom_profile.yaml"
