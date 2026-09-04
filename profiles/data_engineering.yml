@@ -1,28 +1,66 @@
 id: "data_engineering"
-name: "Engenharia de Dados (Freelance)"
-description: "Pipeline focado em entrega rápida de dados, ETL, modelagem dbt e infraestrutura básica."
+name: "Engenharia de Dados"
+description: "Esteira completa de dados: discovery e contratos → modelagem → bronze/silver/gold → qualidade → observabilidade → governança/LGPD → CI/CD e entrega."
 steps:
-  - name: "Levantamento e Entendimento dos Dados"
-    description: "Analise a estrutura esperada do cliente e crie scripts HTTP genéricos ou scraper."
-    agent: "Claude Code"
-    context_files:
-      - "shared_context/rules/python_clean_code.md"
-    expected_output: "Scripts de extração rodando e salvando CSV/JSON brutos."
+  - name: "Discovery e Data Contracts"
+    description: "Levante fonte, volume, frequência, SLA e o schema esperado do cliente. Formalize o contrato de dados de cada fonte."
+    agent: "Perplexity"
+    context_files: []
+    expected_output: "docs/research.md com fontes, volumetria, SLA e docs/data_contracts.md com o schema+tipos de cada fonte."
     approval_required: false
 
-  - name: "Inferência e DDL"
-    description: "Leia o JSON/CSV extraído e gere um schema DDL apropriado para a tabela."
-    agent: "Antigravity"
-    context_files:
-      - "shared_context/rules/python_clean_code.md"
-    expected_output: "Arquivos .sql com CREATE TABLE."
-    approval_required: false
-
-  - name: "Modelagem (dbt)"
-    description: "Crie a estrutura dbt com os modelos sql e schema.yml."
+  - name: "Modelagem Conceitual e Física"
+    description: "Modele o conceitual (entidades, relações) e o físico: DDL das tabelas e o desenho das camadas bronze/silver/gold."
     agent: "Claude Code"
     context_files:
       - "shared_context/skills/dbt_modeling.md"
+    expected_output: "docs/modelagem.md + arquivos .sql com CREATE TABLE das camadas."
+    approval_required: true
+
+  - name: "Extração e Camada Bronze"
+    description: "Implemente a extração (HTTP genérico ou scraper) e a carga bruta na camada bronze, sem transformação."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/rules/python_clean_code.md"
+    expected_output: "Scripts de extração rodando; tabelas bronze populadas com o dado cru."
+    approval_required: false
+
+  - name: "Silver e Gold (dbt)"
+    description: "Crie os modelos dbt: staging (silver) e marts (gold) com fatos e dimensões."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/dbt_modeling.md"
+    expected_output: "Projeto dbt configurado; `dbt build` verde com as tabelas gold finais."
+    approval_required: false
+
+  - name: "Qualidade de Dados"
+    description: "Adicione os testes de qualidade (PK/FK, expectativas de conteúdo) e revise o resultado."
+    agent: "Antigravity"
+    context_files:
+      - "shared_context/skills/data_quality.md"
       - "shared_context/skills/code_review.md"
-    expected_output: "Projeto dbt configurado e tabelas finais rodando."
+    expected_output: "docs/data_quality.md + testes dbt verdes; VEREDITO do revisor."
+    approval_required: true
+    on_reject_return_to: "Silver e Gold (dbt)"
+
+  - name: "Observabilidade"
+    description: "Configure freshness, alertas de falha e a documentação dos modelos."
+    agent: "Codex CLI"
+    context_files: []
+    expected_output: "Checks de freshness + alertas ativos; `dbt docs` gerado."
+    approval_required: false
+
+  - name: "Governança e LGPD"
+    description: "Classifique as colunas, defina base legal, mascaramento e retenção. Gate humano obrigatório."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/data_governance_lgpd.md"
+    expected_output: "docs/governanca.md com coluna → classificação → base legal → tratamento."
+    approval_required: true
+
+  - name: "CI/CD e Entrega"
+    description: "Coloque o `dbt build` no CI, documente o runbook e faça o handoff para o cliente."
+    agent: "Codex CLI"
+    context_files: []
+    expected_output: "Workflow de CI rodando o build; runbook de entrega escrito."
     approval_required: true

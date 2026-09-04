@@ -1,31 +1,39 @@
 """Unit tests for core/parser.py pipeline profile parsing and schema validation."""
 
 import os
+
 import pytest
 from pydantic import ValidationError
-from core.parser import parse_pipeline, load_profile, PipelineProfile, AgentStep
+
+from core.parser import PipelineProfile, load_profile, parse_pipeline
 
 
 def test_parse_existing_profiles():
-    """Verify successful parsing of existing profiles (data_engineering.yml, backend_clean_arch.yml)."""
+    """Verify successful parsing of existing profiles (data_engineering.yml, backend_clean_arch.yml).
+
+    S2.1/S2.2 expandiram os dois para as esteiras completas do backlog — o
+    formato coberto aqui é a forma, não mais a contagem exata de steps.
+    """
     # Test data_engineering profile via parse_pipeline and load_profile
     profile_de = load_profile("data_engineering", profiles_dir="profiles")
     assert isinstance(profile_de, PipelineProfile)
     assert profile_de.id == "data_engineering"
-    assert profile_de.name == "Engenharia de Dados (Freelance)"
-    assert len(profile_de.steps) == 3
-    assert profile_de.steps[0].name == "Levantamento e Entendimento dos Dados"
-    assert profile_de.steps[0].agent == "Claude Code"
-    assert profile_de.steps[0].context_files == ["shared_context/rules/python_clean_code.md"]
+    assert len(profile_de.steps) >= 6  # Discovery...CI/CD (S2.1)
+    assert profile_de.steps[0].name == "Discovery e Data Contracts"
+    assert profile_de.steps[0].agent == "Perplexity"
     assert profile_de.steps[0].approval_required is False
+    assert any(s.approval_required for s in profile_de.steps), "esteira de dados sem gate algum"
 
     # Test backend_clean_arch profile via parse_pipeline directly
     backend_path = os.path.join("profiles", "backend_clean_arch.yml")
     profile_backend = parse_pipeline(backend_path)
     assert isinstance(profile_backend, PipelineProfile)
     assert profile_backend.id == "backend_clean_arch"
-    assert len(profile_backend.steps) == 3
-    assert profile_backend.steps[2].agent == "Antigravity"
+    assert len(profile_backend.steps) >= 6  # Pesquisa...CI (S2.2)
+    review_steps = [s for s in profile_backend.steps if s.agent == "Antigravity"]
+    assert review_steps, "esteira backend sem etapa de review (Antigravity)"
+    arch_step = next(s for s in profile_backend.steps if s.name == "Arquitetura")
+    assert arch_step.approval_required is True  # gate após Arquitetura (issue #5)
 
 
 def test_file_not_found():
@@ -125,6 +133,7 @@ steps:
 def test_all_shipped_profiles_parse_and_reference_existing_context():
     """Todo profiles/*.yml valida no schema e só aponta para context_files que existem."""
     import os
+
     from core.classifier import get_available_profiles
 
     for pid in get_available_profiles("profiles"):

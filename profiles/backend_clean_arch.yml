@@ -1,22 +1,45 @@
 id: "backend_clean_arch"
 name: "Backend (Clean Architecture)"
-description: "Esteira de desenvolvimento backend padrão focada em DDD e Clean Architecture."
+description: "Esteira completa: pesquisa → modelagem de domínio (DDD) → arquitetura → implementação → testes → review → CI."
 steps:
-  - name: "Pesquisa e Arquitetura"
-    description: "Faça o levantamento de tecnologias necessárias e desenhe os domínios (DDD)."
+  - name: "Pesquisa"
+    description: "Levante bibliotecas, padrões e restrições técnicas do domínio do projeto."
+    agent: "Perplexity"
+    context_files: []
+    expected_output: "docs/research.md com decisões de stack e alternativas descartadas."
+    approval_required: false
+
+  - name: "Modelagem de Domínio (DDD)"
+    description: "Mapeie os bounded contexts, a linguagem ubíqua e os aggregates com suas invariantes."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/ddd_modeling.md"
+    expected_output: "docs/domain.md com bounded contexts, glossário e aggregates."
+    approval_required: false
+
+  - name: "Arquitetura"
+    description: "Desenhe as camadas (Clean Architecture) e as interfaces entre elas a partir do domain.md."
     agent: "Claude Code"
     context_files:
       - "shared_context/rules/clean_architecture.md"
-    expected_output: "Documento arquitetural markdown com os bounded contexts definidos."
-    approval_required: false
+    expected_output: "docs/architecture.md com os bounded contexts definidos e o fluxo de dados entre camadas."
+    approval_required: true
 
-  - name: "Implementação Base"
-    description: "Crie a estrutura de pastas do backend e implemente o primeiro domínio."
-    agent: "Claude Code"
+  - name: "Implementação"
+    description: "Implemente a estrutura de pastas e os domínios seguindo a arquitetura aprovada, camada por camada."
+    agent: "Cursor"
     context_files:
       - "shared_context/rules/clean_architecture.md"
       - "shared_context/rules/python_clean_code.md"
-    expected_output: "Código inicial rodando com injeção de dependências."
+    expected_output: "Código rodando com injeção de dependências, fiel ao docs/architecture.md."
+    approval_required: false
+
+  - name: "Testes"
+    description: "Testes de unidade do domínio e de integração dos casos de uso principais."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/rules/python_clean_code.md"
+    expected_output: "Suíte verde cobrindo domínio (unidade) e casos de uso críticos (integração)."
     approval_required: false
 
   - name: "Revisão de Código e Desacoplamento"
@@ -26,4 +49,11 @@ steps:
       - "shared_context/skills/code_review.md"
     expected_output: "Relatório de code review e correções pontuais aplicadas."
     approval_required: true
-    on_reject_return_to: "Implementação Base"
+    on_reject_return_to: "Implementação"
+
+  - name: "CI"
+    description: "Configure o pipeline de CI: lint, testes e build a cada push."
+    agent: "Codex CLI"
+    context_files: []
+    expected_output: "Workflow de CI verde rodando lint + testes."
+    approval_required: false
