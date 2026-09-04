@@ -1,7 +1,15 @@
 import os
-from typing import List
+from typing import List, Literal, Optional
 import yaml
 from pydantic import BaseModel, Field, ValidationError
+
+
+class StepValidation(BaseModel):
+    """Checagem automática do resultado de uma etapa antes de liberar a próxima (S4.3)."""
+    type: Literal["file_exists", "command_zero", "glob_nonempty"]
+    path: Optional[str] = None      # file_exists
+    cmd: Optional[List[str]] = None  # command_zero — lista de args (shell=False)
+    pattern: Optional[str] = None   # glob_nonempty
 
 
 class AgentStep(BaseModel):
@@ -11,6 +19,7 @@ class AgentStep(BaseModel):
     context_files: List[str] = Field(default_factory=list)
     expected_output: str
     approval_required: bool = False
+    validation: List[StepValidation] = Field(default_factory=list)
 
 
 class PipelineProfile(BaseModel):

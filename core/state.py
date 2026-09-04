@@ -22,6 +22,8 @@ class StepState(BaseModel):
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
     advanced_by: Optional[str] = None  # "auto" | "human" — quem liberou a etapa
+    approved_by: Optional[str] = None   # quem registrou a aprovação do gate (S4.1)
+    approved_at: Optional[str] = None
     artifacts: Dict[str, Any] = Field(default_factory=dict)
     notes: Optional[str] = None
 
@@ -155,6 +157,20 @@ class StateManager:
         elif status == StepStatus.WAITING_APPROVAL:
             state.status = "WAITING_APPROVAL"
 
+        self.save_state(state)
+        return state
+
+    def approve_step(self, profile_id: str, step_index: int, approver: str) -> PipelineState:
+        """Registra a aprovação humana de um gate (S4.1). Não avança sozinha — o
+        `run --resume` é quem libera a etapa depois de aprovada."""
+        state = self.load_state(profile_id)
+        if state is None:
+            raise ValueError(f"No state found for profile '{profile_id}'")
+        if step_index < 0 or step_index >= len(state.step_states):
+            raise IndexError(f"Step index {step_index} out of range for profile '{profile_id}'")
+        step = state.step_states[step_index]
+        step.approved_by = approver
+        step.approved_at = datetime.now(timezone.utc).isoformat()
         self.save_state(state)
         return state
 

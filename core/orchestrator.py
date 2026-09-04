@@ -8,6 +8,7 @@ from core.parser import (
 )
 from core.state import StateManager, PipelineState, StepStatus
 from core.context_loader import load_step_context, format_context_for_prompt
+from core.validators import run_validations
 
 
 def _indent(text: str, prefix: str = "     ") -> str:
@@ -61,6 +62,8 @@ class Orchestrator:
             )
 
         if reset:
+            if self.state_manager.load_state(profile_id) is not None:
+                print("♻️  --reset: estado anterior descartado (inclui aprovações registradas).")
             self.state_manager.reset_state(profile_id)
 
         if resume and not reset:
@@ -81,6 +84,22 @@ class Orchestrator:
 
         for step_index in range(start_index, len(profile.steps)):
             step = profile.steps[step_index]
+            sstate = state.step_states[step_index]
+
+            # Retomada de um gate já aprovado: libera sem refazer o trabalho.
+            if sstate.status == StepStatus.WAITING_APPROVAL:
+                if sstate.approved_by:
+                    print(f"✅ Etapa {step_index + 1} '{step.name}' aprovada por {sstate.approved_by}.")
+                    self.state_manager.update_step_status(
+                        profile_id, step_index, StepStatus.COMPLETED,
+                        advanced_by=sstate.advanced_by or "human",
+                    )
+                    state = self.state_manager.load_state(profile_id)
+                    continue
+                print(f"⏸️  Etapa {step_index + 1} '{step.name}' aguardando aprovação.")
+                print(f"   Rode: titan approve {profile_id} {step_index + 1}  →  titan run {profile_id} --resume")
+                return self.state_manager.load_state(profile_id)
+
             step_context = load_step_context(
                 step.context_files, base_dir=self.base_dir, step_name=step.name
             )
@@ -115,12 +134,37 @@ class Orchestrator:
             if not auto_approve:
                 input("Pressione ENTER quando tiver concluído esta etapa com o agente sugerido... ")
 
+            # S4.3 — validação automática do resultado antes de liberar.
+            failures = run_validations(step.validation, base_dir=self.base_dir)
+            if failures:
+                msg = "; ".join(failures)
+                print(f"❌ Validação da etapa {step_index + 1} falhou: {msg}")
+                self.state_manager.update_step_status(
+                    profile_id, step_index, StepStatus.FAILED, notes=f"validação: {msg}"
+                )
+                return self.state_manager.load_state(profile_id)
+
+            # S4.1 — gate de aprovação.
+            approved = state.step_states[step_index].approved_by
+            if step.approval_required and not approved:
+                if auto_approve:
+                    print(f"⚠️  Gate da etapa {step_index + 1} auto-aprovado por --auto.")
+                    self.state_manager.approve_step(profile_id, step_index, "auto")
+                else:
+                    self.state_manager.update_step_status(
+                        profile_id, step_index, StepStatus.WAITING_APPROVAL, advanced_by="human"
+                    )
+                    print(f"⏸️  Etapa {step_index + 1} '{step.name}' exige aprovação.")
+                    print(f"   Rode: titan approve {profile_id} {step_index + 1}  →  titan run {profile_id} --resume")
+                    return self.state_manager.load_state(profile_id)
+
             self.state_manager.update_step_status(
                 profile_id,
                 step_index,
                 StepStatus.COMPLETED,
                 advanced_by="auto" if auto_approve else "human",
             )
+            state = self.state_manager.load_state(profile_id)
 
         print("✅ Pipeline concluído com sucesso!")
         return self.state_manager.load_state(profile_id)
