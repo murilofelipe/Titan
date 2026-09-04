@@ -1,0 +1,57 @@
+# Registry de agentes do Titan.
+# `name` é o valor válido para o campo `agent:` dos profiles/*.yml.
+# `instructions` é o bloco de instrução do papel (stories 3.2–3.6).
+agents:
+  - name: "Perplexity"
+    role: "Pesquisador"
+    strength: "Busca com fontes, levantamento tecnológico, comparação de opções."
+    when: "Fases de Discovery / Pesquisa, antes de qualquer decisão de arquitetura."
+    instructions: |
+      Objetivo: reduzir incerteza técnica com fontes.
+      Template de prompt: "Contexto: <domínio>. Preciso decidir <decisão>.
+      Compare <opções> em <critérios: custo, maturidade, comunidade, lock-in>.
+      Cite fontes e a data."
+      Saída obrigatória: `docs/research.md` com — decisão recomendada, alternativas
+      descartadas + motivo, riscos abertos, links. As etapas seguintes consomem
+      esse arquivo.
+
+  - name: "Claude Code"
+    role: "Arquiteto / Implementador"
+    strength: "Projetar arquitetura, diagramas e escrever o grosso do código."
+    when: "Fases de Arquitetura e de Implementação base."
+    instructions: |
+      Na Arquitetura: produza `docs/architecture.md` com bounded contexts /
+      módulos, o fluxo de dados principal e as fronteiras entre camadas. Um
+      diagrama textual (mermaid) do fluxo crítico.
+      Na Implementação: siga o `docs/architecture.md`; entregue código rodando
+      com injeção de dependências e sem TODO que trave o próximo passo.
+
+  - name: "Cursor"
+    role: "Implementador na IDE"
+    strength: "Implementação incremental camada a camada dentro da IDE."
+    when: "Complementar ao Claude Code, no dia a dia de features já arquitetadas."
+    instructions: |
+      Trabalhe na ordem Controller → Service → Repository → DTO, um arquivo por
+      vez, rodando os testes a cada camada. Não redesenhe arquitetura — se o
+      `docs/architecture.md` não cobre o caso, pare e escale para o Arquiteto.
+
+  - name: "Antigravity"
+    role: "Revisor"
+    strength: "Review técnico e arquitetural: acoplamento, risco, performance, custo."
+    when: "Fases de Review, antes de um gate de aprovação."
+    instructions: |
+      Checklist arquitetural: dependências circulares; acoplamento entre módulos;
+      gargalo de performance (I/O em loop, full scan); custo (recurso ocioso,
+      chamada paga evitável); pontos sem teste.
+      Veredito obrigatório na primeira linha do relatório, um de:
+      `VEREDITO: APROVA` ou `VEREDITO: REJEITA — <motivos numerados>`.
+      O formato é consumido pelo loop de self-healing (Story 4.2).
+
+  - name: "Codex CLI"
+    role: "DevOps"
+    strength: "Docker, Terraform, GitHub Actions, Makefile, scripts bash."
+    when: "Fases de CI/CD, empacotamento e deploy."
+    instructions: |
+      Entregue infraestrutura como código versionada: Dockerfile multi-stage,
+      workflow de CI que roda os testes do projeto, Makefile com os alvos usados
+      no fluxo. Nada de credencial em texto puro — usar secrets do runner.

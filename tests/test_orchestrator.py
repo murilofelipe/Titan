@@ -124,13 +124,13 @@ description: Profile for testing context injection
 steps:
   - name: Step With Context
     description: Execute step 1
-    agent: python_developer
+    agent: Claude Code
     context_files:
       - shared_context/rules/python_clean_code.md
     expected_output: Done
   - name: Step Without Context
     description: Execute step 2
-    agent: qa_engineer
+    agent: Antigravity
     context_files: []
     expected_output: Approved
 """

@@ -9,13 +9,13 @@ desenvolvedor continua sendo o decisor em cada gate.
 Formato conforme `Github/.agents/rules/backlog_format.md` (Épico → Story com
 Fibonacci + justificativa + subtarefas).
 
-**Placar:** 4 épicos · 20 stories · 10 concluídas (✅) · 2 parciais (🟡) · 8 pendentes (⬜) · peso total 101.
+**Placar:** 4 épicos · 20 stories · 16 concluídas (✅) · 2 parciais (🟡) · 2 pendentes (⬜) · peso total 101.
 
 | Épico | Stories | Concluídas | Peso |
 |---|---|---|---|
 | 1 · Orquestrador (Titan/HAL) | 4 | 4 ✅ | 24 |
 | 2 · Perfis de Engenharia | 7 | 5 ✅ / 2 🟡 | 31 |
-| 3 · Adapters de Agentes | 6 | 0 | 21 |
+| 3 · Adapters de Agentes | 6 | 6 ✅ | 21 |
 | 4 · Gates de Qualidade & HITL | 3 | 0 (1 🟡) | 18 |
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ pendente.
@@ -183,11 +183,11 @@ Cada perfil: pipeline + agentes + `context_files` + critérios de aceite.
 ## 🗂️ Épico 3 — Adapters de Agentes
 
 Formalizar como cada papel de agente é referenciado nos steps. Hoje `agent:` é
-uma string livre no `.yml`; os 6 perfis já usam os nomes canônicos previstos
-para o registry ("Claude Code", "Antigravity", "Perplexity", "Codex CLI"), mas
-sem validação.
+uma string livre no `.yml`, mas `core/parser.py` valida contra
+`shared_context/agents.yml` (5 papéis) e o orchestrator recusa agente fora do
+registry.
 
-### 🎫 Story 3.1: Registry de agentes + mapa dos 5 papéis ⬜
+### 🎫 Story 3.1: Registry de agentes + mapa dos 5 papéis ✅
 - **Descrição:** Um catálogo (`agents.yml` ou enum) com os papéis: Perplexity =
   pesquisa, Claude Code = arquitetura/implementação, Cursor = implementação
   diária, Antigravity = review, Codex CLI = CI/CD. O parser valida `agent:`
@@ -196,62 +196,62 @@ sem validação.
 - **Justificativa do Peso:** Toca parser (validação), schema de step e output do
   orchestrator; é a fundação das stories 3.2–3.6.
 - **Tarefas:**
-  - [ ] `shared_context/agents.yml` com papel, ponto forte, quando usar
-  - [ ] Validação de `agent:` no parser
-  - [ ] Mensagem de etapa por agente no orchestrator
-  - [ ] Validar os 6 perfis existentes contra o registry (nomes já canônicos)
+  - [x] `shared_context/agents.yml` — 5 papéis (name/role/strength/when/instructions)
+  - [x] `validate_profile_agents()` no parser; orchestrator rejeita agente fora do registry
+  - [x] Orchestrator imprime papel + bloco de instrução por etapa; `titan agents` lista o catálogo
+  - [x] `titan list` sinaliza perfil com agente inválido; os 6 perfis passam
 
-### 🎫 Story 3.2: Adapter Pesquisador (Perplexity) ⬜
+### 🎫 Story 3.2: Adapter Pesquisador (Perplexity) ✅
 - **Descrição:** Instruções e prompts para as etapas de descoberta, levantamento
   tecnológico e documentação; saída esperada padronizada em `docs/research.md`.
   (issue #7)
 - **Complexidade:** Média | **Peso:** 5
 - **Justificativa do Peso:** Requer um template de prompt de pesquisa reutilizável
   e a convenção de artefato que as etapas seguintes consomem.
-- **Tarefas:**
-  - [ ] Template de prompt de pesquisa
-  - [ ] Convenção `docs/research.md`
-  - [ ] Usar nas fases de Discovery dos perfis
+- **Tarefas:** (entregue no campo `instructions` do agente Perplexity em `agents.yml`)
+  - [x] Template de prompt de pesquisa
+  - [x] Convenção `docs/research.md`
+  - [x] Fases de Pesquisa dos perfis mobile/embedded/ai_ml/game já apontam `docs/research.md`
 
-### 🎫 Story 3.3: Adapter Arquiteto (Claude Code) ⬜
+### 🎫 Story 3.3: Adapter Arquiteto (Claude Code) ✅
 - **Descrição:** Instruções para projetar arquitetura, diagramas e implementar o
   grosso do código. (issue #8)
 - **Complexidade:** Baixa | **Peso:** 3
 - **Justificativa do Peso:** Já é o agente mais usado; o trabalho é formalizar o
   que já se faz na prática num bloco de instrução.
 - **Tarefas:**
-  - [ ] Bloco de instrução do papel Arquiteto
-  - [ ] Convenção `docs/architecture.md`
+  - [x] Bloco de instrução do papel Arquiteto (`agents.yml`)
+  - [x] Convenção `docs/architecture.md`
 
-### 🎫 Story 3.4: Adapter Revisor (Antigravity) ⬜
+### 🎫 Story 3.4: Adapter Revisor (Antigravity) ✅
 - **Descrição:** Checklist de review técnico: gargalo, acoplamento, risco,
   performance, custo. (issue #9)
 - **Complexidade:** Baixa | **Peso:** 3
 - **Justificativa do Peso:** Reaproveita `shared_context/skills/code_review.md`;
   falta o checklist arquitetural e o formato de veredito (aprova/rejeita).
 - **Tarefas:**
-  - [ ] Checklist arquitetural
-  - [ ] Formato de veredito consumível pela Story 4.2
+  - [x] Checklist arquitetural (`agents.yml`)
+  - [x] Veredito `VEREDITO: APROVA` / `VEREDITO: REJEITA — <motivos>` (consumível pela S4.2)
 
-### 🎫 Story 3.5: Adapter DevOps (Codex CLI) ⬜
+### 🎫 Story 3.5: Adapter DevOps (Codex CLI) ✅
 - **Descrição:** Instruções para Docker, Terraform, GitHub Actions, Makefile,
   scripts bash. (issue #10)
 - **Complexidade:** Baixa | **Peso:** 3
 - **Justificativa do Peso:** Bloco de instrução + apontar para skills de infra;
   sem código no motor.
 - **Tarefas:**
-  - [ ] Bloco de instrução do papel DevOps
-  - [ ] Skill de infra em `shared_context/`
+  - [x] Bloco de instrução do papel DevOps (`agents.yml`)
+  - [x] Diretrizes de infra no próprio bloco (Dockerfile multi-stage, CI, Makefile, secrets)
 
-### 🎫 Story 3.6: Adapter Cursor (implementação na IDE) ⬜
+### 🎫 Story 3.6: Adapter Cursor (implementação na IDE) ✅
 - **Descrição:** Papel de implementação incremental dentro da IDE (Controller →
   Service → Repository → DTO), complementar ao Claude Code.
 - **Complexidade:** Baixa | **Peso:** 2
 - **Justificativa do Peso:** Menor dos adapters; só um bloco de instrução e
   entrada no registry.
 - **Tarefas:**
-  - [ ] Bloco de instrução do papel Cursor
-  - [ ] Entrada no registry (Story 3.1)
+  - [x] Bloco de instrução do papel Cursor (`agents.yml`)
+  - [x] Entrada no registry
 
 ---
 

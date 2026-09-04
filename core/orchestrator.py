@@ -1,8 +1,17 @@
 from typing import Optional
 from core.classifier import classify_work
-from core.parser import load_profile, PipelineProfile
+from core.parser import (
+    load_profile,
+    load_agent_registry,
+    validate_profile_agents,
+    PipelineProfile,
+)
 from core.state import StateManager, PipelineState, StepStatus
 from core.context_loader import load_step_context, format_context_for_prompt
+
+
+def _indent(text: str, prefix: str = "     ") -> str:
+    return "\n".join(prefix + line for line in text.strip().splitlines())
 
 
 class Orchestrator:
@@ -43,6 +52,14 @@ class Orchestrator:
         )
         profile: PipelineProfile = load_profile(profile_id, profiles_dir=self.profiles_dir)
 
+        registry = load_agent_registry()
+        unknown = validate_profile_agents(profile, registry)
+        if unknown:
+            raise ValueError(
+                f"Perfil '{profile_id}' usa agentes fora do registry: {', '.join(unknown)}. "
+                f"Válidos: {', '.join(registry.names())}"
+            )
+
         if reset:
             self.state_manager.reset_state(profile_id)
 
@@ -81,6 +98,11 @@ class Orchestrator:
 
             print(f"[{step_index + 1}/{len(profile.steps)}] Etapa: {step.name}")
             print(f"🤖 Agente Recomendado: {step.agent}")
+            role = registry.get(step.agent)
+            if role:
+                print(f"   Papel: {role.role} — {role.strength}")
+                if role.instructions:
+                    print(f"   Instruções do papel:\n{_indent(role.instructions)}")
             print(f"📝 Descrição da Tarefa: {step.description}")
             if step.context_files:
                 print(f"📂 Arquivos de Contexto: {', '.join(step.context_files)}")

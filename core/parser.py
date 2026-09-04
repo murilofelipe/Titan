@@ -20,6 +20,48 @@ class PipelineProfile(BaseModel):
     steps: List[AgentStep]
 
 
+class AgentRole(BaseModel):
+    name: str
+    role: str
+    strength: str = ""
+    when: str = ""
+    instructions: str = ""
+
+
+class AgentRegistry(BaseModel):
+    agents: List[AgentRole]
+
+    def names(self) -> List[str]:
+        return [a.name for a in self.agents]
+
+    def get(self, name: str) -> "AgentRole | None":
+        return next((a for a in self.agents if a.name == name), None)
+
+
+AGENT_REGISTRY_PATH = os.path.join("shared_context", "agents.yml")
+
+
+def load_agent_registry(path: str = AGENT_REGISTRY_PATH) -> AgentRegistry:
+    """Carrega o catálogo de agentes (shared_context/agents.yml)."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Agent registry not found: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+    if not isinstance(data, dict):
+        raise ValueError(f"Invalid agent registry in '{path}': expected a mapping")
+    return AgentRegistry(**data)
+
+
+def validate_profile_agents(
+    profile: PipelineProfile, registry: "AgentRegistry | None" = None
+) -> List[str]:
+    """Retorna a lista de `agent:` do profile que não estão no registry (vazia = ok)."""
+    if registry is None:
+        registry = load_agent_registry()
+    known = set(registry.names())
+    return sorted({s.agent for s in profile.steps if s.agent not in known})
+
+
 def parse_pipeline(filepath: str) -> PipelineProfile:
     """Parses a YAML pipeline file and validates it against PipelineProfile schema.
 
