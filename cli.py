@@ -83,6 +83,44 @@ def approve(profile_id, step_number):
 
 
 @cli.command()
+@click.argument("profile_id")
+@click.argument("step_number", type=int)
+@click.argument("verdict", type=click.Choice(["aprova", "rejeita"], case_sensitive=False))
+@click.option("--motivo", default=None, help="Motivo da rejeição (vai para as notas da etapa).")
+def verdict(profile_id, step_number, verdict, motivo):
+    """Registra o veredito do revisor numa etapa de review (S4.2).
+
+    `aprova` libera o gate; `rejeita` devolve o pipeline para a etapa de
+    implementação (até `max_review_cycles`). Depois rode `titan run <perfil> --resume`.
+    """
+    sm = StateManager()
+    state = sm.load_state(profile_id)
+    if not state:
+        click.echo(f"Nenhum estado encontrado para o perfil '{profile_id}'.")
+        return
+    idx = step_number - 1
+    if idx < 0 or idx >= len(state.step_states):
+        click.echo(f"Etapa {step_number} fora do intervalo (1..{len(state.step_states)}).")
+        return
+    profile = load_profile(profile_id, profiles_dir="profiles")
+    try:
+        return_to = profile.reject_target_index(idx)
+    except ValueError as e:
+        click.echo(f"Erro: {e}")
+        return
+    approved = verdict.lower() == "aprova"
+    new = sm.register_verdict(profile_id, idx, approved, return_to, profile.max_review_cycles, motivo)
+    step = new.step_states[idx]
+    if approved:
+        click.echo(f"✅ Etapa {step_number} aprovada pelo revisor. Rode: titan run {profile_id} --resume")
+    elif step.status == "FAILED":
+        click.echo(f"⛔ Etapa {step_number} REJEITA {step.review_cycles}x — teto {profile.max_review_cycles} estourado. Precisa de intervenção humana.")
+    else:
+        rt = new.step_states[return_to].step_name
+        click.echo(f"🔁 Rejeitada (ciclo {step.review_cycles}). Pipeline volta para '{rt}'. Rode: titan run {profile_id} --resume")
+
+
+@cli.command()
 @click.argument("profile_id", required=False, default="data_engineering")
 def status(profile_id):
     """Exibe o estado atual de execução de um perfil usando StateManager."""
@@ -103,7 +141,8 @@ def status(profile_id):
         dur_txt = f" · {dur:.0f}s" if dur is not None else ""
         by = f" · por {step.advanced_by}" if step.advanced_by else ""
         appr = f" · aprovada por {step.approved_by}" if step.approved_by else ""
-        click.echo(f"  [{step.step_index + 1}] {step.step_name}: {step.status}{agent}{dur_txt}{by}{appr}")
+        cyc = f" · review rejeitado {step.review_cycles}x" if step.review_cycles else ""
+        click.echo(f"  [{step.step_index + 1}] {step.step_name}: {step.status}{agent}{dur_txt}{by}{appr}{cyc}")
         if step.status == "WAITING_APPROVAL" and not step.approved_by:
             waiting.append(step.step_index + 1)
     click.echo("-" * 50)

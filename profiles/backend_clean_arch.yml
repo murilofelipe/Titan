@@ -26,3 +26,4 @@ steps:
       - "shared_context/skills/code_review.md"
     expected_output: "Relatório de code review e correções pontuais aplicadas."
     approval_required: true
+    on_reject_return_to: "Implementação Base"

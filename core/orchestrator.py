@@ -122,6 +122,8 @@ class Orchestrator:
                 print(f"   Papel: {role.role} — {role.strength}")
                 if role.instructions:
                     print(f"   Instruções do papel:\n{_indent(role.instructions)}")
+            if state.step_states[step_index].review_cycles:
+                print(f"🔁 Ciclo de review nº {state.step_states[step_index].review_cycles + 1} desta etapa.")
             print(f"📝 Descrição da Tarefa: {step.description}")
             if step.context_files:
                 print(f"📂 Arquivos de Contexto: {', '.join(step.context_files)}")

@@ -130,9 +130,11 @@ def test_all_shipped_profiles_parse_and_reference_existing_context():
     for pid in get_available_profiles("profiles"):
         profile = load_profile(pid, profiles_dir="profiles")
         assert profile.steps, f"{pid} sem steps"
-        for step in profile.steps:
+        for i, step in enumerate(profile.steps):
             for cf in step.context_files:
                 assert os.path.isfile(cf), f"{pid}: context_file inexistente {cf}"
+            if step.on_reject_return_to:
+                profile.reject_target_index(i)  # ValueError se o nome não resolve
 
 
 def test_load_profile_yaml_extension(tmp_path):

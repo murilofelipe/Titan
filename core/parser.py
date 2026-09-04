@@ -20,6 +20,9 @@ class AgentStep(BaseModel):
     expected_output: str
     approval_required: bool = False
     validation: List[StepValidation] = Field(default_factory=list)
+    # S4.2 — etapa de review: para onde o pipeline volta se o veredito for REJEITA.
+    # Nome de outra etapa ou índice 1-based; ausente => etapa imediatamente anterior.
+    on_reject_return_to: Optional[str] = None
 
 
 class PipelineProfile(BaseModel):
@@ -27,6 +30,20 @@ class PipelineProfile(BaseModel):
     name: str
     description: str
     steps: List[AgentStep]
+    max_review_cycles: int = 3  # teto de ciclos review→implementação (S4.2)
+
+    def reject_target_index(self, review_step_index: int) -> int:
+        """Resolve `on_reject_return_to` da etapa de review para um índice 0-based."""
+        raw = self.steps[review_step_index].on_reject_return_to
+        if raw is None:
+            return max(0, review_step_index - 1)
+        raw = str(raw).strip()
+        for i, s in enumerate(self.steps):
+            if s.name == raw:
+                return i
+        if raw.isdigit():
+            return max(0, min(int(raw) - 1, len(self.steps) - 1))
+        raise ValueError(f"on_reject_return_to inválido: '{raw}'")
 
 
 class AgentRole(BaseModel):
