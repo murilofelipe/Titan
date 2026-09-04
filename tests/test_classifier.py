@@ -81,6 +81,38 @@ def test_classify_work_empty_whitespace_none():
     assert classify_work(None) == DEFAULT_PROFILE
 
 
+def test_classify_work_never_returns_unavailable_profile():
+    """Invariante: nunca devolve perfil que load_profile não conseguiria abrir.
+
+    Hoje 'mobile_android' tem keywords mas não tem .yml -> cai no default.
+    Continua válido quando a story 2.4 criar o .yml (aí devolve mobile_android).
+    """
+    result = classify_work("Build an Android app with Jetpack Compose and MVVM")
+    assert result in get_available_profiles("profiles")
+
+
+def test_classify_work_interactive_prompts_on_low_confidence(monkeypatch):
+    """Com interactive=True e baixa confiança, pergunta o perfil via click.prompt."""
+    asked = {}
+
+    def fake_prompt(text, **kwargs):
+        asked["called"] = True
+        return "backend_clean_arch"
+
+    monkeypatch.setattr("core.classifier.click.prompt", fake_prompt)
+    result = classify_work("algo totalmente ambíguo sem termos", interactive=True)
+    assert asked.get("called") is True
+    assert result == "backend_clean_arch"
+
+
+def test_classify_work_non_interactive_never_prompts(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("click.prompt não deveria ser chamado")
+
+    monkeypatch.setattr("core.classifier.click.prompt", boom)
+    assert classify_work("texto sem palavras-chave") == DEFAULT_PROFILE
+
+
 def test_classify_work_prompt_kwarg_alias():
     """Verify classify_work supports 'prompt' keyword argument."""
     assert classify_work(prompt="backend_clean_arch") == "backend_clean_arch"

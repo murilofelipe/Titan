@@ -6,3 +6,4 @@ __pycache__/
 .coverage
 .titan_state/
 .titan_state*
+.reports/
