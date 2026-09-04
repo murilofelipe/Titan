@@ -1,7 +1,17 @@
-import os
 import pytest
+
 from core.orchestrator import Orchestrator
 from core.state import StateManager, StepStatus
+
+
+def _run_through_gates(orchestrator, sm, profile_id, approver="tester"):
+    """Roda (ou retoma) até concluir, aprovando cada gate que travar no caminho."""
+    state = orchestrator.run_pipeline(profile_id, auto_approve=False, resume=True)
+    while state.status == "WAITING_APPROVAL":
+        gate = next(s for s in state.step_states if s.status == StepStatus.WAITING_APPROVAL)
+        sm.approve_step(profile_id, gate.step_index, approver)
+        state = orchestrator.run_pipeline(profile_id, auto_approve=False, resume=True)
+    return state
 
 
 def test_orchestrator_run_pipeline_auto_mode(tmp_path, monkeypatch):
@@ -37,23 +47,52 @@ def test_orchestrator_run_pipeline_interactive(tmp_path, monkeypatch):
 
     monkeypatch.setattr("builtins.input", mock_input)
 
-    # backend_clean_arch tem approval_required no step 3 (índice 2): o run
-    # interativo para no gate (S4.1) em vez de concluir sozinho.
+    # backend_clean_arch tem approval_required em mais de uma etapa (Arquitetura,
+    # Review): o run interativo para no primeiro gate (S4.1) em vez de concluir sozinho.
     state = orchestrator.run_pipeline("backend_clean_arch", auto_approve=False)
 
     assert state is not None
     assert state.profile_id == "backend_clean_arch"
     assert state.status == "WAITING_APPROVAL"
-    assert state.step_states[0].status == StepStatus.COMPLETED
-    assert state.step_states[1].status == StepStatus.COMPLETED
-    assert state.step_states[2].status == StepStatus.WAITING_APPROVAL
+    first_gate = next(s for s in state.step_states if s.status == StepStatus.WAITING_APPROVAL)
+    assert all(
+        s.status == StepStatus.COMPLETED for s in state.step_states if s.step_index < first_gate.step_index
+    )
 
-    # Ciclo completo: aprova o gate e retoma -> conclui.
-    sm.approve_step("backend_clean_arch", 2, "tester")
-    final = orchestrator.run_pipeline("backend_clean_arch", auto_approve=False, resume=True)
+    # Ciclo completo: aprova cada gate que aparecer no caminho até concluir.
+    from core.parser import load_profile
+    profile = load_profile("backend_clean_arch", profiles_dir="profiles")
+    final = _run_through_gates(orchestrator, sm, "backend_clean_arch")
     assert final.status == "COMPLETED"
-    assert final.step_states[2].approved_by == "tester"
     assert all(step.status == StepStatus.COMPLETED for step in final.step_states)
+    for step, sstate in zip(profile.steps, final.step_states):
+        if step.approval_required:
+            assert sstate.approved_by == "tester"
+
+
+def test_orchestrator_resume_after_approval_does_not_rerun_step(tmp_path, monkeypatch):
+    """Guarda o branch WAITING_APPROVAL+approved_by: retomar um gate já aprovado
+    conclui a etapa sem chamar input() de novo para ela (`game` tem 1 só gate)."""
+    from core.parser import load_profile
+
+    state_dir = str(tmp_path / "titan_state")
+    sm = StateManager(state_dir=state_dir)
+    orchestrator = Orchestrator(profiles_dir="profiles", state_manager=sm)
+    profile = load_profile("game", profiles_dir="profiles")
+
+    input_calls = []
+    monkeypatch.setattr("builtins.input", lambda prompt="": input_calls.append(prompt))
+
+    state = orchestrator.run_pipeline("game", auto_approve=False)
+    assert state.status == "WAITING_APPROVAL"
+    assert len(input_calls) == len(profile.steps)  # 1 input por etapa, incluindo o gate
+
+    gate = next(s for s in state.step_states if s.status == StepStatus.WAITING_APPROVAL)
+    sm.approve_step("game", gate.step_index, "tester")
+    final = orchestrator.run_pipeline("game", auto_approve=False, resume=True)
+
+    assert final.status == "COMPLETED"
+    assert len(input_calls) == len(profile.steps)  # retomada não chamou input() de novo
 
 
 def test_orchestrator_run_pipeline_classification(tmp_path, monkeypatch):
@@ -95,15 +134,14 @@ def test_orchestrator_resume_mode(tmp_path, monkeypatch):
     state = orchestrator.run_pipeline("data_engineering", auto_approve=False, resume=True)
 
     assert state is not None
-    # Input chamado só para os steps restantes (steps 1 e 2); o step 2 tem
-    # approval_required e o run para no gate.
-    assert len(input_calls) == len(profile.steps) - 1
+    # data_engineering tem mais de um gate: o run para no primeiro que encontrar
+    # depois do step 0 (já concluído antes do resume).
     assert state.status == "WAITING_APPROVAL"
-    assert state.step_states[1].status == StepStatus.COMPLETED
+    assert len(input_calls) >= 1
 
-    sm.approve_step("data_engineering", 2, "tester")
-    final = orchestrator.run_pipeline("data_engineering", auto_approve=False, resume=True)
+    final = _run_through_gates(orchestrator, sm, "data_engineering")
     assert final.status == "COMPLETED"
+    assert all(step.status == StepStatus.COMPLETED for step in final.step_states)
 
 
 def test_orchestrator_reset_mode(tmp_path, monkeypatch):

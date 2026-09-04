@@ -13,18 +13,25 @@ def _run(tmp_path, monkeypatch, auto):
     monkeypatch.setattr("builtins.input", lambda prompt="": "")
     sm = StateManager(state_dir=str(tmp_path / "st"))
     orch = Orchestrator(profiles_dir="profiles", state_manager=sm)
-    orch.run_pipeline("data_engineering", auto_approve=auto)
-    return sm.load_state("data_engineering")
+    state = orch.run_pipeline("data_engineering", auto_approve=auto)
+    # data_engineering tem gates (approval_required); no modo interativo o run
+    # para em cada um até aprovar e retomar.
+    while state.status == "WAITING_APPROVAL" and not auto:
+        gate = next(s for s in state.step_states if s.status == "WAITING_APPROVAL")
+        sm.approve_step("data_engineering", gate.step_index, "tester")
+        state = orch.run_pipeline("data_engineering", auto_approve=auto, resume=True)
+    return state
 
 
 def test_step_records_agent_and_advanced_by(tmp_path, monkeypatch):
     state = _run(tmp_path, monkeypatch, auto=True)
     assert all(s.advanced_by == "auto" for s in state.step_states)
-    assert state.step_states[0].agent == "Claude Code"
+    assert state.step_states[0].agent == "Perplexity"
 
 
 def test_step_advanced_by_human_interactive(tmp_path, monkeypatch):
     state = _run(tmp_path, monkeypatch, auto=False)
+    assert state.status == "COMPLETED"
     assert all(s.advanced_by == "human" for s in state.step_states)
 
 

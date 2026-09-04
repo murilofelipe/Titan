@@ -9,12 +9,12 @@ desenvolvedor continua sendo o decisor em cada gate.
 Formato conforme `Github/.agents/rules/backlog_format.md` (Épico → Story com
 Fibonacci + justificativa + subtarefas).
 
-**Placar:** 4 épicos · 20 stories · 18 concluídas (✅) · 2 parciais (🟡) · 0 pendentes (⬜) · peso total 101.
+**Placar:** 4 épicos · 20 stories · 20 concluídas (✅) · 0 parciais (🟡) · 0 pendentes (⬜) · peso total 101. **Backlog fechado.**
 
 | Épico | Stories | Concluídas | Peso |
 |---|---|---|---|
 | 1 · Orquestrador (Titan/HAL) | 4 | 4 ✅ | 24 |
-| 2 · Perfis de Engenharia | 7 | 5 ✅ / 2 🟡 | 31 |
+| 2 · Perfis de Engenharia | 7 | 7 ✅ | 31 |
 | 3 · Adapters de Agentes | 6 | 6 ✅ | 21 |
 | 4 · Gates de Qualidade & HITL | 3 | 3 ✅ | 18 |
 
@@ -96,7 +96,7 @@ mantém o estado. Issues originais #1–#3 (fechadas).
 Esteiras pré-prontas que definem o padrão de trabalho para cada tipo de software.
 Cada perfil: pipeline + agentes + `context_files` + critérios de aceite.
 
-### 🎫 Story 2.1: Perfil "Engenharia de Dados" 🟡
+### 🎫 Story 2.1: Perfil "Engenharia de Dados" ✅
 - **Descrição:** Hoje `profiles/data_engineering.yml` tem 3 steps (Levantamento →
   Inferência/DDL → Modelagem dbt). Expandir para a esteira completa: Discovery →
   Data Contracts → Modelagem Conceitual/Física → Bronze/Silver/Gold → Qualidade
@@ -106,12 +106,13 @@ Cada perfil: pipeline + agentes + `context_files` + critérios de aceite.
   `context_files` de cada fase) mais do que de código. Precisa de skills novas em
   `shared_context/` para as fases de qualidade/governança.
 - **Tarefas:**
-  - [ ] Redesenhar os steps do `.yml` conforme a esteira completa
-  - [ ] Mapear agente por fase (Perplexity/Claude/Antigravity/Codex)
-  - [ ] Skills em `shared_context/skills/` para qualidade e governança
-  - [ ] `approval_required` nos gates de modelagem física e de entrega
+  - [x] Esteira completa (8 etapas): Discovery+Contratos → Modelagem → Bronze →
+    Silver/Gold (dbt) → Qualidade → Observabilidade → Governança/LGPD → CI/CD
+  - [x] Agente por fase (Perplexity/Claude Code/Antigravity/Codex CLI)
+  - [x] Skills novas: `data_quality.md`, `data_governance_lgpd.md`
+  - [x] `approval_required` na Modelagem física, Qualidade, Governança e Entrega
 
-### 🎫 Story 2.2: Perfil "Backend (Clean Arch)" 🟡
+### 🎫 Story 2.2: Perfil "Backend (Clean Arch)" ✅
 - **Descrição:** Hoje `profiles/backend_clean_arch.yml` tem 3 steps. Expandir
   para Pesquisa → DDD → Arquitetura → Implementação → Testes → Review → CI.
   (issue #5)
@@ -119,10 +120,10 @@ Cada perfil: pipeline + agentes + `context_files` + critérios de aceite.
 - **Justificativa do Peso:** Mesmo tipo de curadoria da Story 2.1; parte das
   rules já existe (`clean_architecture.md`, `python_clean_code.md`).
 - **Tarefas:**
-  - [ ] Redesenhar steps (7 fases)
-  - [ ] Mapear agente por fase
-  - [ ] Gate de aprovação após Arquitetura
-  - [ ] Skill de DDD em `shared_context/`
+  - [x] 7 fases: Pesquisa → DDD → Arquitetura → Implementação → Testes → Review → CI
+  - [x] Agente por fase (Perplexity/Claude Code/Cursor/Antigravity/Codex CLI)
+  - [x] Gate de aprovação após Arquitetura (+ Review, com `on_reject_return_to`)
+  - [x] Skill `ddd_modeling.md`
 
 ### 🎫 Story 2.3: Injeção automática de contexto ✅
 - **Descrição:** Ao selecionar um perfil, carregar os `context_files` de cada

@@ -1,13 +1,13 @@
-from typing import Optional
+
 from core.classifier import classify_work
+from core.context_loader import format_context_for_prompt, load_step_context
 from core.parser import (
-    load_profile,
-    load_agent_registry,
-    validate_profile_agents,
     PipelineProfile,
+    load_agent_registry,
+    load_profile,
+    validate_profile_agents,
 )
-from core.state import StateManager, PipelineState, StepStatus
-from core.context_loader import load_step_context, format_context_for_prompt
+from core.state import PipelineState, StateManager, StepStatus
 from core.validators import run_validations
 
 
@@ -21,7 +21,7 @@ class Orchestrator:
     def __init__(
         self,
         profiles_dir: str = "profiles",
-        state_manager: Optional[StateManager] = None,
+        state_manager: StateManager | None = None,
         base_dir: str = ".",
     ):
         self.profiles_dir = profiles_dir
