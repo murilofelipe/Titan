@@ -2,7 +2,7 @@ import os
 
 import click
 from core.classifier import get_available_profiles
-from core.parser import load_profile
+from core.parser import load_profile, load_agent_registry, validate_profile_agents
 from core.orchestrator import Orchestrator
 from core.state import StateManager
 from core.telemetry import render_report
@@ -38,6 +38,7 @@ def list_profiles():
         click.echo("Nenhum perfil encontrado.")
         return
 
+    registry = load_agent_registry()
     click.echo("📋 Perfis Disponíveis:")
     click.echo("-" * 50)
     for p_id in available_ids:
@@ -45,9 +46,21 @@ def list_profiles():
             profile = load_profile(p_id, profiles_dir="profiles")
             click.echo(f"• {profile.id} ({profile.name})")
             click.echo(f"  Descrição: {profile.description}")
+            unknown = validate_profile_agents(profile, registry)
+            if unknown:
+                click.echo(f"  ⚠️  Agentes fora do registry: {', '.join(unknown)}")
         except Exception as e:
             click.echo(f"• {p_id} (Erro ao carregar: {e})")
     click.echo("-" * 50)
+
+
+@cli.command(name="agents")
+def list_agents():
+    """Lista o registry de agentes (papel, ponto forte, quando usar)."""
+    for a in load_agent_registry().agents:
+        click.echo(f"• {a.name} — {a.role}")
+        click.echo(f"  Forte em: {a.strength}")
+        click.echo(f"  Quando: {a.when}")
 
 
 @cli.command()
