@@ -64,6 +64,25 @@ def list_agents():
 
 
 @cli.command()
+@click.argument("profile_id")
+@click.argument("step_number", type=int)
+def approve(profile_id, step_number):
+    """Aprova um gate (STEP_NUMBER é 1-based). Depois rode `titan run <perfil> --resume`."""
+    sm = StateManager()
+    state = sm.load_state(profile_id)
+    if not state:
+        click.echo(f"Nenhum estado encontrado para o perfil '{profile_id}'.")
+        return
+    idx = step_number - 1
+    if idx < 0 or idx >= len(state.step_states):
+        click.echo(f"Etapa {step_number} fora do intervalo (1..{len(state.step_states)}).")
+        return
+    approver = os.environ.get("USER") or "humano"
+    sm.approve_step(profile_id, idx, approver)
+    click.echo(f"✅ Etapa {step_number} aprovada por {approver}. Rode: titan run {profile_id} --resume")
+
+
+@cli.command()
 @click.argument("profile_id", required=False, default="data_engineering")
 def status(profile_id):
     """Exibe o estado atual de execução de um perfil usando StateManager."""
@@ -77,13 +96,20 @@ def status(profile_id):
     click.echo(f"Status Geral: {state.status}")
     click.echo(f"Etapa Atual: {state.current_step_index}/{len(state.step_states)}")
     click.echo("-" * 50)
+    waiting = []
     for step in state.step_states:
         agent = f" · {step.agent}" if step.agent else ""
         dur = step.duration_seconds
         dur_txt = f" · {dur:.0f}s" if dur is not None else ""
         by = f" · por {step.advanced_by}" if step.advanced_by else ""
-        click.echo(f"  [{step.step_index + 1}] {step.step_name}: {step.status}{agent}{dur_txt}{by}")
+        appr = f" · aprovada por {step.approved_by}" if step.approved_by else ""
+        click.echo(f"  [{step.step_index + 1}] {step.step_name}: {step.status}{agent}{dur_txt}{by}{appr}")
+        if step.status == "WAITING_APPROVAL" and not step.approved_by:
+            waiting.append(step.step_index + 1)
     click.echo("-" * 50)
+    if waiting:
+        nums = ", ".join(str(n) for n in waiting)
+        click.echo(f"⏸️  Aguardando aprovação: etapa(s) {nums} — rode `titan approve {state.profile_id} <n>`")
 
 
 @cli.command()

@@ -9,14 +9,14 @@ desenvolvedor continua sendo o decisor em cada gate.
 Formato conforme `Github/.agents/rules/backlog_format.md` (Épico → Story com
 Fibonacci + justificativa + subtarefas).
 
-**Placar:** 4 épicos · 20 stories · 16 concluídas (✅) · 2 parciais (🟡) · 2 pendentes (⬜) · peso total 101.
+**Placar:** 4 épicos · 20 stories · 17 concluídas (✅) · 2 parciais (🟡) · 1 pendente (⬜) · peso total 101.
 
 | Épico | Stories | Concluídas | Peso |
 |---|---|---|---|
 | 1 · Orquestrador (Titan/HAL) | 4 | 4 ✅ | 24 |
 | 2 · Perfis de Engenharia | 7 | 5 ✅ / 2 🟡 | 31 |
 | 3 · Adapters de Agentes | 6 | 6 ✅ | 21 |
-| 4 · Gates de Qualidade & HITL | 3 | 0 (1 🟡) | 18 |
+| 4 · Gates de Qualidade & HITL | 3 | 2 ✅ | 18 |
 
 Legenda: ✅ feito · 🟡 parcial · ⬜ pendente.
 
@@ -259,7 +259,7 @@ registry.
 
 Garantir que o pipeline não produza lixo autonomamente.
 
-### 🎫 Story 4.1: Approval gates reais 🟡
+### 🎫 Story 4.1: Approval gates reais ✅
 - **Descrição:** O schema já tem `approval_required` por step. Falta o gate de
   fato: pausar, pedir OK explícito do humano, e registrar a aprovação (quem/
   quando) no estado antes de liberar a próxima etapa. (issue #11)
@@ -267,9 +267,10 @@ Garantir que o pipeline não produza lixo autonomamente.
 - **Justificativa do Peso:** Toca orchestrator (fluxo de pausa) e state (registro
   da aprovação); a flag já existe, então metade do caminho está feito.
 - **Tarefas:**
-  - [ ] Pausa dura quando `approval_required` e sem aprovação registrada
-  - [ ] `titan approve <run> <step>` grava aprovação no estado
-  - [ ] `titan status` mostra etapas travadas aguardando aprovação
+  - [x] Pausa dura no modo interativo; `--auto` registra `approved_by="auto"`
+  - [x] `titan approve <perfil> <n>` grava `approved_by`/`approved_at` no estado
+  - [x] `titan status` lista as etapas travadas aguardando aprovação
+  - Retomada: `run --resume` libera a etapa aprovada sem refazer o trabalho
 
 ### 🎫 Story 4.2: Self-healing / review loop ⬜
 - **Descrição:** O Agente Revisor avalia o código gerado; se encontrar débito
@@ -285,13 +286,13 @@ Garantir que o pipeline não produza lixo autonomamente.
   - [ ] Parser do veredito do revisor (aprova/rejeita + motivos)
   - [ ] Testes do loop (rejeita 2x, aprova na 3ª)
 
-### 🎫 Story 4.3: Validadores de etapa automáticos ⬜
+### 🎫 Story 4.3: Validadores de etapa automáticos ✅
 - **Descrição:** Antes de liberar a próxima etapa, checar se o `expected_output`
   da etapa atual existe (arquivo criado, testes passando, `dbt parse` ok).
 - **Complexidade:** Média | **Peso:** 5
 - **Justificativa do Peso:** Precisa de validadores plugáveis por tipo de saída
   (arquivo/comando/teste) e integração no loop do orchestrator.
 - **Tarefas:**
-  - [ ] Tipos de validador: arquivo existe, comando sai 0, glob não vazio
-  - [ ] Campo `validation:` opcional no schema de step
-  - [ ] Bloquear avanço se a validação falhar
+  - [x] Validadores `file_exists`, `command_zero` (shell=False), `glob_nonempty` em `core/validators.py`
+  - [x] Campo `validation:` opcional no `AgentStep`
+  - [x] Falha marca a etapa `FAILED` e para o pipeline (`--resume` volta pra ela)

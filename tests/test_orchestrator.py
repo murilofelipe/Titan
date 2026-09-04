@@ -37,13 +37,23 @@ def test_orchestrator_run_pipeline_interactive(tmp_path, monkeypatch):
 
     monkeypatch.setattr("builtins.input", mock_input)
 
+    # backend_clean_arch tem approval_required no step 3 (índice 2): o run
+    # interativo para no gate (S4.1) em vez de concluir sozinho.
     state = orchestrator.run_pipeline("backend_clean_arch", auto_approve=False)
 
     assert state is not None
     assert state.profile_id == "backend_clean_arch"
-    assert state.status == "COMPLETED"
-    assert len(input_calls) == len(state.step_states)
-    assert all(step.status == StepStatus.COMPLETED for step in state.step_states)
+    assert state.status == "WAITING_APPROVAL"
+    assert state.step_states[0].status == StepStatus.COMPLETED
+    assert state.step_states[1].status == StepStatus.COMPLETED
+    assert state.step_states[2].status == StepStatus.WAITING_APPROVAL
+
+    # Ciclo completo: aprova o gate e retoma -> conclui.
+    sm.approve_step("backend_clean_arch", 2, "tester")
+    final = orchestrator.run_pipeline("backend_clean_arch", auto_approve=False, resume=True)
+    assert final.status == "COMPLETED"
+    assert final.step_states[2].approved_by == "tester"
+    assert all(step.status == StepStatus.COMPLETED for step in final.step_states)
 
 
 def test_orchestrator_run_pipeline_classification(tmp_path, monkeypatch):
@@ -85,9 +95,15 @@ def test_orchestrator_resume_mode(tmp_path, monkeypatch):
     state = orchestrator.run_pipeline("data_engineering", auto_approve=False, resume=True)
 
     assert state is not None
-    # Input should be called for remaining steps only (len(steps) - 1)
+    # Input chamado só para os steps restantes (steps 1 e 2); o step 2 tem
+    # approval_required e o run para no gate.
     assert len(input_calls) == len(profile.steps) - 1
-    assert state.status == "COMPLETED"
+    assert state.status == "WAITING_APPROVAL"
+    assert state.step_states[1].status == StepStatus.COMPLETED
+
+    sm.approve_step("data_engineering", 2, "tester")
+    final = orchestrator.run_pipeline("data_engineering", auto_approve=False, resume=True)
+    assert final.status == "COMPLETED"
 
 
 def test_orchestrator_reset_mode(tmp_path, monkeypatch):
