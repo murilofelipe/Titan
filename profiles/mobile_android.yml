@@ -41,3 +41,4 @@ steps:
       - "shared_context/skills/code_review.md"
     expected_output: "Relatório de review com veredito e correções aplicadas."
     approval_required: true
+    on_reject_return_to: "UI em Compose"

@@ -24,6 +24,7 @@ class StepState(BaseModel):
     advanced_by: Optional[str] = None  # "auto" | "human" — quem liberou a etapa
     approved_by: Optional[str] = None   # quem registrou a aprovação do gate (S4.1)
     approved_at: Optional[str] = None
+    review_cycles: int = 0              # rejeições já acumuladas nesta etapa de review (S4.2)
     artifacts: Dict[str, Any] = Field(default_factory=dict)
     notes: Optional[str] = None
 
@@ -171,6 +172,60 @@ class StateManager:
         step = state.step_states[step_index]
         step.approved_by = approver
         step.approved_at = datetime.now(timezone.utc).isoformat()
+        self.save_state(state)
+        return state
+
+    def register_verdict(
+        self,
+        profile_id: str,
+        review_step_index: int,
+        approved: bool,
+        return_to_index: int,
+        max_cycles: int = 3,
+        reason: Optional[str] = None,
+    ) -> PipelineState:
+        """Registra o veredito do revisor (S4.2).
+
+        APROVA: registra a aprovação do gate (o `run --resume` conclui a etapa).
+        REJEITA: incrementa o contador de ciclos e devolve as etapas
+        `return_to_index..review_step_index` para PENDING. Estourando o teto, a
+        etapa de review vira FAILED (precisa de humano)."""
+        state = self.load_state(profile_id)
+        if state is None:
+            raise ValueError(f"No state found for profile '{profile_id}'")
+        if not (0 <= review_step_index < len(state.step_states)):
+            raise IndexError(f"Step index {review_step_index} out of range")
+
+        review = state.step_states[review_step_index]
+
+        if approved:
+            review.approved_by = review.approved_by or "revisor"
+            review.approved_at = datetime.now(timezone.utc).isoformat()
+            review.notes = reason or review.notes
+            self.save_state(state)
+            return state
+
+        review.review_cycles += 1
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if review.review_cycles > max_cycles:
+            review.status = StepStatus.FAILED
+            review.completed_at = now_iso
+            review.notes = f"REJEITA x{review.review_cycles} — teto {max_cycles} estourado. {reason or ''}".strip()
+            state.status = "FAILED"
+            self.save_state(state)
+            return state
+
+        review.notes = f"REJEITA (ciclo {review.review_cycles}): {reason or 'sem motivo'}"
+        for i in range(return_to_index, review_step_index + 1):
+            s = state.step_states[i]
+            s.status = StepStatus.PENDING
+            s.started_at = None
+            s.completed_at = None
+            s.advanced_by = None
+            if i != review_step_index:
+                s.review_cycles = 0
+        state.current_step_index = return_to_index
+        state.status = "IN_PROGRESS"
         self.save_state(state)
         return state
 

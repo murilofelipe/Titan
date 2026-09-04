@@ -31,6 +31,7 @@ steps:
       - "shared_context/skills/ml_evaluation.md"
     expected_output: "docs/model_eval.md com métricas por classe/segmento vs. baseline e matriz de confusão."
     approval_required: true
+    on_reject_return_to: "Treinamento"
 
   - name: "Deploy"
     description: "Empacote o modelo como serviço de inferência com contrato de entrada/saída."

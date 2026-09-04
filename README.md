@@ -17,7 +17,20 @@ Diferente de sistemas que gastam tokens de APIs pagas automatizando tudo no back
    ```bash
    pip install -r requirements.txt
    ```
-2. Execute um perfil desejado:
+2. Execute um perfil desejado (por ID ou por um prompt de intenção):
    ```bash
    python cli.py run data_engineering
+   python cli.py run "app android com jetpack compose"
    ```
+
+## Comandos
+
+| Comando | O que faz |
+|---|---|
+| `run <perfil\|prompt> [--auto] [--resume] [--reset]` | Executa o pipeline passo a passo |
+| `list` | Lista os perfis disponíveis |
+| `agents` | Lista o registry de agentes (papéis) |
+| `status <perfil>` | Estado do pipeline: etapas, duração, gates travados |
+| `approve <perfil> <n>` | Aprova um gate (`approval_required`) |
+| `verdict <perfil> <n> aprova\|rejeita [--motivo ...]` | Veredito do revisor; `rejeita` devolve o pipeline para a implementação |
+| `report <perfil> [-o arquivo.md]` | Relatório de telemetria em Markdown |
