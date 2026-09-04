@@ -1,0 +1,48 @@
+id: "ai_ml"
+name: "IA / ML"
+description: "Esteira de modelo: pesquisa → dataset → treinamento → avaliação → deploy → monitoramento, com gate quantitativo antes de promover."
+steps:
+  - name: "Pesquisa"
+    description: "Levante abordagens, arquiteturas candidatas e o baseline a bater."
+    agent: "Perplexity"
+    context_files: []
+    expected_output: "docs/research.md com métrica primária escolhida e baseline definido."
+    approval_required: false
+
+  - name: "Dataset"
+    description: "Colete e versione os dados; defina o split (temporal/por entidade) e trate vazamento."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/rules/python_clean_code.md"
+    expected_output: "Dataset versionado com train/val/test separados e documentação do schema."
+    approval_required: false
+
+  - name: "Treinamento"
+    description: "Treine o modelo com experimentos rastreados (params, métricas, artefatos)."
+    agent: "Claude Code"
+    context_files: []
+    expected_output: "Modelo treinado + log de experimentos reproduzível."
+    approval_required: false
+
+  - name: "Avaliação"
+    description: "Compare com o baseline na métrica primária e por segmento crítico."
+    agent: "Antigravity"
+    context_files:
+      - "shared_context/skills/ml_evaluation.md"
+    expected_output: "docs/model_eval.md com métricas por classe/segmento vs. baseline e matriz de confusão."
+    approval_required: true
+
+  - name: "Deploy"
+    description: "Empacote o modelo como serviço de inferência com contrato de entrada/saída."
+    agent: "Codex CLI"
+    context_files: []
+    expected_output: "Endpoint de inferência versionado com o modelo aprovado."
+    approval_required: false
+
+  - name: "Monitoramento"
+    description: "Configure data/prediction drift, métrica online em janela móvel e fallback."
+    agent: "Claude Code"
+    context_files:
+      - "shared_context/skills/ml_evaluation.md"
+    expected_output: "Dashboards de drift + alertas configurados e fallback acionável."
+    approval_required: false

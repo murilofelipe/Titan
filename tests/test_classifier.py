@@ -91,6 +91,14 @@ def test_classify_work_never_returns_unavailable_profile():
     assert result in get_available_profiles("profiles")
 
 
+def test_classify_work_new_profiles():
+    """Perfis 2.4–2.7: agora têm .yml, então o classificador deve acertá-los."""
+    assert classify_work("Build an Android app with Jetpack Compose and MVVM") == "mobile_android"
+    assert classify_work("firmware para ESP32 lendo datasheet do sensor I2C") == "embedded"
+    assert classify_work("treinamento de modelo PyTorch com rede neural") == "ai_ml"
+    assert classify_work("desenvolver um jogo na engine Godot com game loop") == "game"
+
+
 def test_classify_work_interactive_prompts_on_low_confidence(monkeypatch):
     """Com interactive=True e baixa confiança, pergunta o perfil via click.prompt."""
     asked = {}
