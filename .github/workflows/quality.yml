@@ -33,3 +33,6 @@ jobs:
 
       - name: Checagem de Sintaxe
         run: python -m py_compile cli.py
+
+      - name: Testes
+        run: python -m pytest -q
