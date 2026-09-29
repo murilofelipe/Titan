@@ -1,3 +1,5 @@
+**Português** · [English](README.en.md)
+
 # Titan / HAL - Orquestrador Agêntico
 
 O **Titan** é um orquestrador/diretor de pipeline focado em criar uma esteira de produção ágil usando **Agentes de IA locais** operados com contas pessoais (como Antigravity, Claude Code, Cursor, etc.). 
@@ -6,10 +8,12 @@ Diferente de sistemas que gastam tokens de APIs pagas automatizando tudo no back
 
 ## Estrutura do Projeto
 
-- `core/`: O motor de leitura e execução dos pipelines.
+- `core/`: O motor de leitura e execução dos pipelines (orquestrador, classificador de intenção, estado, telemetria, validadores).
 - `cli.py`: A interface de linha de comando.
-- `profiles/`: Diretório contendo os `.yml` que ditam o passo a passo de cada esteira (ex: Engenharia de Dados, Backend).
-- `shared_context/`: Repositório central de conhecimento (rules, skills) que qualquer agente (Claude, Antigravity) pode consumir.
+- `profiles/`: Diretório contendo os `.yml` que ditam o passo a passo de cada esteira (ex: `data_engineering`, `backend_clean_arch`, `mobile_android`, `ai_ml`, `embedded`, `game`).
+- `shared_context/`: Repositório central de conhecimento (rules, skills) e o registry de agentes (`agents.yml`) que qualquer agente (Claude, Antigravity) pode consumir.
+
+- `tests/`: testes (`pytest`).
 
 ## Como Executar
 
